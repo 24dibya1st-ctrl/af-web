@@ -50,6 +50,27 @@ Open:
 - Login page: `http://localhost:8000/login.html`
 - Chat page: `http://localhost:8000/index.html`
 
+## Firebase Hosting deploy (fixes 404 on web.app)
+
+Project is set to:
+- `af-ai-store-f0761e`
+
+Hosting config files are already included:
+- `.firebaserc`
+- `firebase.json`
+
+Deploy commands:
+
+```bash
+firebase login
+firebase use af-ai-store-f0761e
+firebase deploy --only hosting
+```
+
+After successful deploy, open:
+- `https://af-ai-store-f0761e.web.app`
+- `https://af-ai-store-f0761e.firebaseapp.com`
+
 ## Step 2 behavior
 
 - Signup with email/password on `login.html`
