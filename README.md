@@ -1,12 +1,26 @@
 # af-web
 
-Minimal runnable project scaffold with optional Firebase link support.
+Minimal runnable project scaffold with optional Firebase link support and a ChatGPT-style frontend UI (Option 1).
 
-## Run
+## Run Python check
 
 ```bash
 python3 main.py
 ```
+
+## Open ChatGPT-style UI (Option 1)
+
+Open `index.html` in browser.
+
+You can also run a quick local static server:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit:
+
+`http://localhost:8000/index.html`
 
 ## Link Firebase (optional)
 

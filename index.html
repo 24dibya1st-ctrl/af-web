@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AF AI Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>AF AI Chat</h1>
+        <button id="newChatBtn" class="ghost-btn" type="button">+ New chat</button>
+      </div>
+      <nav class="chat-history" id="chatHistory" aria-label="Chat history"></nav>
+    </aside>
+
+    <main class="chat-layout">
+      <header class="chat-topbar">
+        <button id="menuBtn" class="icon-btn" type="button" aria-label="Toggle sidebar">☰</button>
+        <p>AI Assistant</p>
+      </header>
+
+      <section class="chat-area" id="chatArea" aria-live="polite"></section>
+
+      <div class="typing-indicator hidden" id="typingIndicator" aria-live="polite">
+        <span></span><span></span><span></span>
+        <p>AI is thinking...</p>
+      </div>
+
+      <form class="input-bar" id="chatForm">
+        <textarea
+          id="messageInput"
+          placeholder="Message AF AI Chat..."
+          rows="1"
+          autocomplete="off"
+        ></textarea>
+        <button type="submit" id="sendBtn">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
