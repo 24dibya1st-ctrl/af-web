@@ -1,51 +1,44 @@
 # af-web
 
-Minimal runnable project scaffold with optional Firebase link support and a ChatGPT-style frontend UI (Option 1).
+AF AI Chat scaffold with:
+- ChatGPT-style UI (Option 1)
+- Firebase setup hooks
+- Step 2 auth flow (signup/login/logout + protected chat route)
 
-## Run Python check
+## Step 2 setup (complete this first)
 
-```bash
-python3 main.py
-```
+Edit `firebase.js` and replace placeholder values in `firebaseConfig` with your real Firebase web app config:
 
-## Open ChatGPT-style UI (Option 1)
+- `apiKey`
+- `authDomain`
+- `projectId`
+- `storageBucket`
+- `messagingSenderId`
+- `appId`
 
-Open `index.html` in browser.
+Also make sure in Firebase Console:
+- Authentication -> Sign-in method -> **Email/Password enabled**
+- Firestore database is created (for next steps)
 
-You can also run a quick local static server:
+## Run web app
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then visit:
+Open:
+- Login page: `http://localhost:8000/login.html`
+- Chat page: `http://localhost:8000/index.html`
 
-`http://localhost:8000/index.html`
+## Step 2 behavior
 
-## Link Firebase (optional)
+- Signup with email/password on `login.html`
+- Login with email/password on `login.html`
+- Unauthenticated users visiting `index.html` are redirected to `login.html`
+- Logged-in users are redirected away from `login.html` to `index.html`
+- Logout button in chat top bar signs out and redirects to `login.html`
 
-### Option A: use a `.env` file (recommended)
-
-```bash
-cp .env.example .env
-# edit only FIREBASE_API_KEY in .env (project URLs are prefilled)
-python3 main.py
-```
-
-### Option B: export variables in shell
-
-Set these environment variables before running:
-
-```bash
-export FIREBASE_PROJECT_ID="your-project-id"
-export FIREBASE_API_KEY="your-api-key"
-export FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
-python3 main.py
-```
-
-When required values are set (via `.env` or shell exports), the app reports Firebase as linked and prints hosting URLs.
-
-## Your Firebase project values
+## Existing Firebase project values
 
 - Project ID: `af-ai-store-f0761e`
 - Site name: `af-ai-store-f0761e`

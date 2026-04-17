@@ -1,6 +1,9 @@
+import { onAuthStateChangedSafe, signOutSafe } from "./auth.js";
+
 const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
 const newChatBtn = document.getElementById("newChatBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 const chatHistory = document.getElementById("chatHistory");
 const chatArea = document.getElementById("chatArea");
 const typingIndicator = document.getElementById("typingIndicator");
@@ -150,6 +153,16 @@ chatHistory.addEventListener("click", (event) => {
 window.addEventListener("resize", () => {
   if (window.innerWidth > 900) {
     sidebar.classList.remove("open");
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await signOutSafe();
+});
+
+onAuthStateChangedSafe((user) => {
+  if (!user) {
+    window.location.href = "login.html";
   }
 });
 
