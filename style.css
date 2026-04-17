@@ -78,6 +78,8 @@ body {
   padding: 10px;
   cursor: pointer;
   font-size: 13px;
+  display: grid;
+  gap: 3px;
 }
 
 .chat-history-item:hover,
@@ -85,6 +87,20 @@ body {
   background: var(--panel-soft);
   border-color: var(--border);
   color: var(--text);
+}
+
+.chat-history-title {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.chat-history-preview {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .chat-layout {

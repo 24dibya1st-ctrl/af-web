@@ -67,6 +67,16 @@ Open:
   - stores AI response in Firestore
   - renders both in chat UI
 
+## Step 5 behavior (real-time sidebar improvements)
+
+- Chat list updates in real-time with Firestore listeners
+- Sidebar entries show:
+  - chat title
+  - last message preview
+  - updated timestamp
+- Conversations reorder automatically by latest activity (`updatedAt`)
+- Message list remains real-time for active conversation
+
 ## Step 4 behavior (20/day limit)
 
 - Free plan includes **20 user messages/day**

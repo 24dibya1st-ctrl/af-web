@@ -5,13 +5,13 @@ import {
   addDoc,
   collection,
   doc,
-  getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const sidebar = document.getElementById("sidebar");
@@ -31,6 +31,7 @@ const upgradeBtn = document.getElementById("upgradeBtn");
 let currentUser = null;
 let activeChatId = null;
 let unsubscribeMessages = null;
+let unsubscribeChats = null;
 let localChats = [];
 const FREE_DAILY_LIMIT = 20;
 let todaysUsage = 0;
@@ -118,7 +119,17 @@ function renderHistory() {
       button.classList.add("active");
     }
     button.dataset.chatId = chat.id;
-    button.textContent = chat.title;
+
+    const titleNode = document.createElement("p");
+    titleNode.className = "chat-history-title";
+    titleNode.textContent = chat.title;
+
+    const previewNode = document.createElement("p");
+    previewNode.className = "chat-history-preview";
+    previewNode.textContent = chat.lastMessage || "No messages yet";
+
+    button.appendChild(titleNode);
+    button.appendChild(previewNode);
     chatHistory.appendChild(button);
   });
 }
@@ -216,6 +227,7 @@ async function sendMessageToActiveChat(role, text) {
   if (!currentUser || !activeChatId) {
     return;
   }
+  const chatDocRef = doc(db, "users", currentUser.uid, "chats", activeChatId);
   const messagesRef = collection(
     db,
     "users",
@@ -229,7 +241,9 @@ async function sendMessageToActiveChat(role, text) {
     text,
     createdAt: serverTimestamp(),
   });
-  await addDoc(doc(db, "users", currentUser.uid, "chats", activeChatId), {
+  await updateDoc(chatDocRef, {
+    lastMessage: text,
+    lastRole: role,
     updatedAt: serverTimestamp(),
   });
 }
@@ -340,29 +354,53 @@ async function createChatAndActivate(title) {
   const chatsRef = collection(db, "users", currentUser.uid, "chats");
   const chatDoc = await addDoc(chatsRef, {
     title,
+    lastMessage: "",
+    lastRole: "assistant",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
-  localChats = [{ id: chatDoc.id, title }, ...localChats];
   setActiveChat(chatDoc.id);
 }
 
-async function loadOrCreateInitialChats() {
+function subscribeToChats() {
   const chatsRef = collection(db, "users", currentUser.uid, "chats");
-  const chatsQuery = query(chatsRef, orderBy("updatedAt", "desc"), limit(20));
-  const snapshot = await getDocs(chatsQuery);
+  const chatsQuery = query(chatsRef, orderBy("updatedAt", "desc"), limit(50));
 
-  localChats = snapshot.docs.map((chatDoc) => ({
-    id: chatDoc.id,
-    title: chatDoc.data().title || "Untitled chat",
-  }));
+  unsubscribeChats = onSnapshot(chatsQuery, async (snapshot) => {
+    localChats = snapshot.docs.map((chatDoc) => ({
+      id: chatDoc.id,
+      title: chatDoc.data().title || "Untitled chat",
+      lastMessage: chatDoc.data().lastMessage || "",
+      lastRole: chatDoc.data().lastRole || "assistant",
+    }));
 
-  if (!localChats.length) {
+    renderHistory();
+
+    if (!localChats.length) {
+      await createChatAndActivate("Welcome chat");
+      return;
+    }
+
+    const hasActive = localChats.some((chat) => chat.id === activeChatId);
+    if (!activeChatId || !hasActive) {
+      setActiveChat(localChats[0].id);
+    }
+  });
+}
+
+async function initializeFirstChatIfNeeded() {
+  const chatsRef = collection(db, "users", currentUser.uid, "chats");
+  const chatsQuery = query(chatsRef, limit(1));
+  const snapshotPromise = new Promise((resolve) => {
+    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+      unsubscribe();
+      resolve(snapshot);
+    });
+  });
+  const snapshot = await snapshotPromise;
+  if (!snapshot.size) {
     await createChatAndActivate("Welcome chat");
-    return;
   }
-
-  setActiveChat(localChats[0].id);
 }
 
 requireAuthForChat().then((user) => {
@@ -370,9 +408,22 @@ requireAuthForChat().then((user) => {
     return;
   }
   currentUser = user;
-  Promise.all([loadOrCreateInitialChats(), loadUsageState()]).catch((error) => {
-    console.error("Initialization failed:", error);
-    chatArea.innerHTML = "";
-    renderMessage("assistant", "Failed to initialize chat. Please refresh.");
-  });
+  Promise.all([initializeFirstChatIfNeeded(), loadUsageState()])
+    .then(() => {
+      subscribeToChats();
+    })
+    .catch((error) => {
+      console.error("Initialization failed:", error);
+      chatArea.innerHTML = "";
+      renderMessage("assistant", "Failed to initialize chat. Please refresh.");
+    });
+});
+
+window.addEventListener("beforeunload", () => {
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+  }
+  if (unsubscribeChats) {
+    unsubscribeChats();
+  }
 });
