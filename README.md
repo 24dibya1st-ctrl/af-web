@@ -5,6 +5,7 @@ AF AI Chat scaffold with:
 - Step 2 auth flow (signup/login/logout + protected chat route)
 - Step 3 real chat flow (Gemini + Firestore persistence)
 - Step 4 free-tier usage limit (20 messages/day + upgrade prompt)
+- Step 6 usage UX (progress bar + remaining count + Pro status)
 
 ## Step 2 setup (complete this first)
 
@@ -77,13 +78,30 @@ Open:
 - Conversations reorder automatically by latest activity (`updatedAt`)
 - Message list remains real-time for active conversation
 
+## Step 6 behavior (usage UX + Pro status)
+
+- Top bar now shows:
+  - current plan badge (`Free` or `Pro`)
+  - usage summary text
+  - remaining messages for free users
+  - visual usage progress bar
+- If usage document plan is `pro`, the app:
+  - shows `Pro plan active`
+  - removes daily message blocking
+  - hides upgrade CTA
+- Firestore usage document supports:
+  - `day` (`YYYY-MM-DD`)
+  - `count` (daily used)
+  - `plan` (`free` or `pro`)
+
 ## Step 4 behavior (20/day limit)
 
 - Free plan includes **20 user messages/day**
 - Usage is tracked in Firestore:
   - `users/{uid}/usage/daily` with fields:
-    - `dateKey` (`YYYY-MM-DD`, UTC)
+    - `day` (`YYYY-MM-DD`, UTC)
     - `count` (number of user messages sent today)
+    - `plan` (`free` default, optional `pro`)
 - On each send attempt:
   - app increments usage count in a Firestore transaction
   - if count exceeds 20, send is blocked

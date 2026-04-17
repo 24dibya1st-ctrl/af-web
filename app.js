@@ -5,13 +5,12 @@ import {
   addDoc,
   collection,
   doc,
-  limit,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
-  updateDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const sidebar = document.getElementById("sidebar");
@@ -24,19 +23,24 @@ const typingIndicator = document.getElementById("typingIndicator");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
-const usageCounter = document.getElementById("usageCounter");
-const upgradeBanner = document.getElementById("upgradeBanner");
+const usageBadge = document.getElementById("usageBadge");
+const usageProgress = document.getElementById("usageProgress");
+const usageDetail = document.getElementById("usageDetail");
+const planBadge = document.getElementById("planBadge");
+const limitNotice = document.getElementById("limitNotice");
 const upgradeBtn = document.getElementById("upgradeBtn");
 
 let currentUser = null;
 let activeChatId = null;
 let unsubscribeMessages = null;
 let unsubscribeChats = null;
+let unsubscribeUsage = null;
 let localChats = [];
 const FREE_DAILY_LIMIT = 20;
 let todaysUsage = 0;
 let usageBlocked = false;
 let activeChatMessages = [];
+let currentPlan = "free";
 
 function scrollToLatest() {
   chatArea.scrollTo({
@@ -54,13 +58,31 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function setUsageState(used) {
+function setUsageState(used, plan = currentPlan) {
+  currentPlan = plan;
   todaysUsage = used;
-  usageBlocked = todaysUsage >= FREE_DAILY_LIMIT;
-  usageCounter.textContent = `${Math.min(todaysUsage, FREE_DAILY_LIMIT)}/${FREE_DAILY_LIMIT} free messages today`;
+  const isPro = currentPlan === "pro";
+  usageBlocked = !isPro && todaysUsage >= FREE_DAILY_LIMIT;
+
+  const clampedUsage = Math.min(todaysUsage, FREE_DAILY_LIMIT);
+  const remaining = Math.max(FREE_DAILY_LIMIT - clampedUsage, 0);
+  const progressPercent = Math.min((clampedUsage / FREE_DAILY_LIMIT) * 100, 100);
+
+  usageBadge.textContent = isPro
+    ? "Pro plan active"
+    : `${clampedUsage} / ${FREE_DAILY_LIMIT} today`;
+  usageBadge.classList.toggle("pro", isPro);
+  usageProgress.style.width = `${isPro ? 100 : progressPercent}%`;
+  usageDetail.textContent = isPro
+    ? "Unlimited messages on Pro"
+    : `${remaining} free messages remaining today`;
+  planBadge.textContent = isPro ? "Plan: Pro" : "Plan: Free";
+  planBadge.classList.toggle("pro", isPro);
+
+  upgradeBtn.classList.toggle("hidden", isPro);
   messageInput.disabled = usageBlocked;
   sendBtn.disabled = usageBlocked;
-  upgradeBanner.classList.toggle("hidden", !usageBlocked);
+  limitNotice.classList.toggle("hidden", !usageBlocked);
 }
 
 function disableInputTemporarily(disabled) {
@@ -138,51 +160,51 @@ async function incrementUsageOrThrow() {
   const usageDocRef = doc(db, "users", currentUser.uid, "usage", "daily");
   const today = getTodayKey();
 
-  const nextUsage = await runTransaction(db, async (transaction) => {
+  const usageState = await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(usageDocRef);
     const data = snapshot.exists() ? snapshot.data() : {};
-    const currentDay = data.day || "";
+    const currentDay = data.day || data.dateKey || "";
     const currentCount = typeof data.count === "number" ? data.count : 0;
+    const plan = data.plan === "pro" ? "pro" : "free";
     const baseCount = currentDay === today ? currentCount : 0;
 
-    if (baseCount >= FREE_DAILY_LIMIT) {
+    if (plan !== "pro" && baseCount >= FREE_DAILY_LIMIT) {
       throw new Error("DAILY_LIMIT_REACHED");
     }
 
-    const updated = baseCount + 1;
+    const updated = plan === "pro" ? baseCount : baseCount + 1;
     transaction.set(
       usageDocRef,
       {
+        dateKey: today,
         day: today,
         count: updated,
+        plan,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
     );
-    return updated;
+    return { used: updated, plan };
   });
 
-  setUsageState(nextUsage);
+  setUsageState(usageState.used, usageState.plan);
 }
 
-async function loadUsageState() {
-  const usageRef = collection(db, "users", currentUser.uid, "usage");
-  const usageQuery = query(usageRef, limit(10));
-  const usageSnapshot = await getDocs(usageQuery);
-  const today = getTodayKey();
-  let used = 0;
-
-  usageSnapshot.forEach((docSnap) => {
-    if (docSnap.id !== "daily") {
+function subscribeUsageState() {
+  const usageDocRef = doc(db, "users", currentUser.uid, "usage", "daily");
+  unsubscribeUsage = onSnapshot(usageDocRef, (snapshot) => {
+    const today = getTodayKey();
+    if (!snapshot.exists()) {
+      setUsageState(0, "free");
       return;
     }
-    const data = docSnap.data();
-    if (data.day === today && typeof data.count === "number") {
-      used = data.count;
-    }
-  });
 
-  setUsageState(used);
+    const data = snapshot.data();
+    const day = data.day || data.dateKey || "";
+    const plan = data.plan === "pro" ? "pro" : "free";
+    const count = day === today && typeof data.count === "number" ? data.count : 0;
+    setUsageState(count, plan);
+  });
 }
 
 function listenToActiveChatMessages(chatId) {
@@ -241,11 +263,15 @@ async function sendMessageToActiveChat(role, text) {
     text,
     createdAt: serverTimestamp(),
   });
-  await updateDoc(chatDocRef, {
+  await setDoc(
+    chatDocRef,
+    {
     lastMessage: text,
     lastRole: role,
     updatedAt: serverTimestamp(),
-  });
+    },
+    { merge: true }
+  );
 }
 
 async function askAiAndPersist(userText) {
@@ -281,7 +307,7 @@ chatForm.addEventListener("submit", async (event) => {
   } catch (error) {
     disableInputTemporarily(false);
     if (error?.message === "DAILY_LIMIT_REACHED") {
-      setUsageState(FREE_DAILY_LIMIT);
+      setUsageState(FREE_DAILY_LIMIT, currentPlan);
       renderMessage(
         "assistant",
         "Free daily limit reached (20/20). Upgrade to Pro for unlimited messages."
@@ -389,16 +415,7 @@ function subscribeToChats() {
 }
 
 async function initializeFirstChatIfNeeded() {
-  const chatsRef = collection(db, "users", currentUser.uid, "chats");
-  const chatsQuery = query(chatsRef, limit(1));
-  const snapshotPromise = new Promise((resolve) => {
-    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
-      unsubscribe();
-      resolve(snapshot);
-    });
-  });
-  const snapshot = await snapshotPromise;
-  if (!snapshot.size) {
+  if (!localChats.length) {
     await createChatAndActivate("Welcome chat");
   }
 }
@@ -408,10 +425,9 @@ requireAuthForChat().then((user) => {
     return;
   }
   currentUser = user;
-  Promise.all([initializeFirstChatIfNeeded(), loadUsageState()])
-    .then(() => {
-      subscribeToChats();
-    })
+  subscribeToChats();
+  subscribeUsageState();
+  Promise.resolve(initializeFirstChatIfNeeded())
     .catch((error) => {
       console.error("Initialization failed:", error);
       chatArea.innerHTML = "";
@@ -425,5 +441,8 @@ window.addEventListener("beforeunload", () => {
   }
   if (unsubscribeChats) {
     unsubscribeChats();
+  }
+  if (unsubscribeUsage) {
+    unsubscribeUsage();
   }
 });

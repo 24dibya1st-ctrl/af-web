@@ -147,6 +147,61 @@ body {
   font-size: 12px;
 }
 
+.usage-badge.pro {
+  border-color: #2f5d44;
+  color: #b6f8cf;
+  background: linear-gradient(135deg, #173022, #153626);
+}
+
+.usage-panel {
+  border-bottom: 1px solid var(--border);
+  background: #121621;
+  padding: 10px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.usage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.usage-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.usage-progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #1a2230;
+  border: 1px solid var(--border);
+}
+
+.usage-progress-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.2s ease;
+  background: linear-gradient(90deg, #5f6eff, #7c8cff);
+}
+
+.usage-progress-fill.near-limit {
+  background: linear-gradient(90deg, #f3b15c, #ff9a52);
+}
+
+.usage-progress-fill.at-limit {
+  background: linear-gradient(90deg, #ff8a7a, #ff6767);
+}
+
+.usage-progress-fill.pro {
+  background: linear-gradient(90deg, #39d98a, #6ef0b7);
+}
+
 .icon-btn {
   border: 1px solid var(--border);
   background: var(--panel-soft);
