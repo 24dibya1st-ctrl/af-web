@@ -1,4 +1,4 @@
-import { auth } from "./firebase.js";
+import { auth, isFirebaseConfigured } from "./firebase.js";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -6,23 +6,37 @@ import {
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-function showError(targetId, message) {
-  const node = document.getElementById(targetId);
-  if (!node) {
+function showStatus(message) {
+  const status = document.getElementById("authStatus");
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+export function onAuthStateChangedSafe(callback) {
+  return onAuthStateChanged(auth, callback);
+}
+
+export async function signOutSafe() {
+  await signOut(auth);
+  window.location.href = "login.html";
+}
+
+function initLoginPage() {
+  const authForm = document.getElementById("authForm");
+  const loginBtn = document.getElementById("loginBtn");
+  const signupBtn = document.getElementById("signupBtn");
+  const emailInput = document.getElementById("emailInput");
+  const passwordInput = document.getElementById("passwordInput");
+
+  if (!authForm || !loginBtn || !signupBtn || !emailInput || !passwordInput) {
     return;
   }
-  node.textContent = message;
-}
 
-function clearError(targetId) {
-  showError(targetId, "");
-}
-
-export function initLoginPage() {
-  const signupForm = document.getElementById("signupForm");
-  const loginForm = document.getElementById("loginForm");
-
-  if (!signupForm || !loginForm) {
+  if (!isFirebaseConfigured()) {
+    showStatus("Firebase is not configured yet. Update firebase.js first.");
+    loginBtn.disabled = true;
+    signupBtn.disabled = true;
     return;
   }
 
@@ -32,48 +46,44 @@ export function initLoginPage() {
     }
   });
 
-  signupForm.addEventListener("submit", async (event) => {
+  authForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    clearError("signupError");
-    const email = document.getElementById("signupEmail").value.trim();
-    const password = document.getElementById("signupPassword").value;
-
+    showStatus("");
+    loginBtn.disabled = true;
+    signupBtn.disabled = true;
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(
+        auth,
+        emailInput.value.trim(),
+        passwordInput.value
+      );
       window.location.href = "index.html";
     } catch (error) {
-      showError("signupError", error.message || "Signup failed.");
+      showStatus(error.message || "Login failed.");
+    } finally {
+      loginBtn.disabled = false;
+      signupBtn.disabled = false;
     }
   });
 
-  loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    clearError("loginError");
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value;
-
+  signupBtn.addEventListener("click", async () => {
+    showStatus("");
+    loginBtn.disabled = true;
+    signupBtn.disabled = true;
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(
+        auth,
+        emailInput.value.trim(),
+        passwordInput.value
+      );
       window.location.href = "index.html";
     } catch (error) {
-      showError("loginError", error.message || "Login failed.");
+      showStatus(error.message || "Signup failed.");
+    } finally {
+      loginBtn.disabled = false;
+      signupBtn.disabled = false;
     }
   });
 }
 
-export function requireAuthForChat() {
-  return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-        return;
-      }
-      resolve(user);
-    });
-  });
-}
-
-export async function logoutCurrentUser() {
-  await signOut(auth);
-  window.location.href = "login.html";
-}
+initLoginPage();

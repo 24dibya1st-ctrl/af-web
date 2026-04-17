@@ -1,4 +1,17 @@
-import { onAuthStateChangedSafe, signOutSafe } from "./auth.js";
+import { requireAuthForChat, logoutCurrentUser } from "./auth.js";
+import { db } from "./firebase.js";
+import { getAiReply } from "./ai.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
@@ -10,15 +23,10 @@ const typingIndicator = document.getElementById("typingIndicator");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
 
-let activeChatId = "chat-1";
-let chatCounter = 3;
-let aiTimer = null;
-
-const chats = [
-  { id: "chat-1", title: "Welcome chat" },
-  { id: "chat-2", title: "Product ideas" },
-  { id: "chat-3", title: "Support draft" },
-];
+let currentUser = null;
+let activeChatId = null;
+let unsubscribeMessages = null;
+let localChats = [];
 
 function scrollToLatest() {
   chatArea.scrollTo({
@@ -32,7 +40,7 @@ function autoGrowInput() {
   messageInput.style.height = `${Math.min(messageInput.scrollHeight, 180)}px`;
 }
 
-function createMessage(role, text) {
+function renderMessage(role, text) {
   const message = document.createElement("article");
   message.className = `message ${role}`;
 
@@ -75,7 +83,7 @@ function hideTypingIndicator() {
 
 function renderHistory() {
   chatHistory.innerHTML = "";
-  chats.forEach((chat) => {
+  localChats.forEach((chat) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "chat-history-item";
@@ -88,35 +96,84 @@ function renderHistory() {
   });
 }
 
+function listenToActiveChatMessages(chatId) {
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
+  }
+
+  const messagesRef = collection(
+    db,
+    "users",
+    currentUser.uid,
+    "chats",
+    chatId,
+    "messages"
+  );
+  const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
+
+  unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+    chatArea.innerHTML = "";
+    snapshot.forEach((msgDoc) => {
+      const data = msgDoc.data();
+      if (data.role && data.text) {
+        renderMessage(data.role, data.text);
+      }
+    });
+    if (!snapshot.size) {
+      renderMessage("assistant", "Welcome to AF AI Chat. Ask anything to begin.");
+    }
+  });
+}
+
 function setActiveChat(chatId) {
   activeChatId = chatId;
   renderHistory();
-  chatArea.innerHTML = "";
-  createMessage("assistant", `Switched to ${chatId}. Start chatting.`);
+  listenToActiveChatMessages(chatId);
 }
 
-function mockAssistantReply(userText) {
-  if (aiTimer) {
-    clearTimeout(aiTimer);
+async function sendMessageToActiveChat(role, text) {
+  if (!currentUser || !activeChatId) {
+    return;
   }
-  showTypingIndicator();
-  aiTimer = setTimeout(() => {
-    hideTypingIndicator();
-    createMessage("assistant", `You said: "${userText}"\n\nThis is a UI-only demo reply.`);
-    aiTimer = null;
-  }, 900);
+  const messagesRef = collection(
+    db,
+    "users",
+    currentUser.uid,
+    "chats",
+    activeChatId,
+    "messages"
+  );
+  await addDoc(messagesRef, {
+    role,
+    text,
+    createdAt: serverTimestamp(),
+  });
 }
 
-chatForm.addEventListener("submit", (event) => {
+async function askAiAndPersist(userText) {
+  showTypingIndicator();
+  try {
+    const reply = await getAiReply(userText);
+    await sendMessageToActiveChat("assistant", reply);
+  } catch (error) {
+    const safeMessage = error?.message || "AI request failed.";
+    await sendMessageToActiveChat("assistant", `Error: ${safeMessage}`);
+  } finally {
+    hideTypingIndicator();
+  }
+}
+
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = messageInput.value.trim();
   if (!text) {
     return;
   }
-  createMessage("user", text);
+  await sendMessageToActiveChat("user", text);
   messageInput.value = "";
   autoGrowInput();
-  mockAssistantReply(text);
+  await askAiAndPersist(text);
 });
 
 messageInput.addEventListener("keydown", (event) => {
@@ -133,10 +190,13 @@ menuBtn.addEventListener("click", () => {
 });
 
 newChatBtn.addEventListener("click", () => {
-  chatCounter += 1;
-  const chatId = `chat-${chatCounter}`;
-  chats.unshift({ id: chatId, title: `New chat ${chatCounter}` });
-  setActiveChat(chatId);
+  if (!currentUser) {
+    return;
+  }
+  const nextChatNumber = localChats.length + 1;
+  createChatAndActivate(`New chat ${nextChatNumber}`).catch((error) => {
+    console.error("Failed to create chat:", error);
+  });
 });
 
 chatHistory.addEventListener("click", (event) => {
@@ -157,14 +217,46 @@ window.addEventListener("resize", () => {
 });
 
 logoutBtn.addEventListener("click", async () => {
-  await signOutSafe();
+  await logoutCurrentUser();
 });
 
-onAuthStateChangedSafe((user) => {
-  if (!user) {
-    window.location.href = "login.html";
+async function createChatAndActivate(title) {
+  const chatsRef = collection(db, "users", currentUser.uid, "chats");
+  const chatDoc = await addDoc(chatsRef, {
+    title,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  localChats = [{ id: chatDoc.id, title }, ...localChats];
+  setActiveChat(chatDoc.id);
+}
+
+async function loadOrCreateInitialChats() {
+  const chatsRef = collection(db, "users", currentUser.uid, "chats");
+  const chatsQuery = query(chatsRef, orderBy("updatedAt", "desc"), limit(20));
+  const snapshot = await getDocs(chatsQuery);
+
+  localChats = snapshot.docs.map((chatDoc) => ({
+    id: chatDoc.id,
+    title: chatDoc.data().title || "Untitled chat",
+  }));
+
+  if (!localChats.length) {
+    await createChatAndActivate("Welcome chat");
+    return;
   }
-});
 
-renderHistory();
-createMessage("assistant", "Welcome to AF AI Chat. Ask anything to begin.");
+  setActiveChat(localChats[0].id);
+}
+
+requireAuthForChat().then((user) => {
+  if (!user) {
+    return;
+  }
+  currentUser = user;
+  loadOrCreateInitialChats().catch((error) => {
+    console.error("Failed to load chats:", error);
+    chatArea.innerHTML = "";
+    renderMessage("assistant", "Failed to load chats. Please refresh.");
+  });
+});

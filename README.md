@@ -2,8 +2,8 @@
 
 AF AI Chat scaffold with:
 - ChatGPT-style UI (Option 1)
-- Firebase setup hooks
 - Step 2 auth flow (signup/login/logout + protected chat route)
+- Step 3 real chat flow (Gemini + Firestore persistence)
 
 ## Step 2 setup (complete this first)
 
@@ -18,7 +18,25 @@ Edit `firebase.js` and replace placeholder values in `firebaseConfig` with your 
 
 Also make sure in Firebase Console:
 - Authentication -> Sign-in method -> **Email/Password enabled**
-- Firestore database is created (for next steps)
+- Firestore database is created
+
+## Step 3 setup (real AI + saved chat)
+
+1. In `ai.js`, replace:
+   - `REPLACE_WITH_GEMINI_API_KEY`
+2. In Firebase Console, keep Firestore enabled.
+
+Firestore structure used:
+
+`users/{uid}/conversations/{conversationId}`
+- `title`
+- `createdAt`
+- `updatedAt`
+
+`users/{uid}/conversations/{conversationId}/messages/{messageId}`
+- `role` (`user` or `assistant`)
+- `text`
+- `createdAt`
 
 ## Run web app
 
@@ -37,6 +55,16 @@ Open:
 - Unauthenticated users visiting `index.html` are redirected to `login.html`
 - Logged-in users are redirected away from `login.html` to `index.html`
 - Logout button in chat top bar signs out and redirects to `login.html`
+
+## Step 3 behavior
+
+- Sidebar shows user conversations loaded from Firestore
+- Creating/selecting a chat loads saved messages
+- Sending a message:
+  - stores user message in Firestore
+  - sends prompt to Gemini API
+  - stores AI response in Firestore
+  - renders both in chat UI
 
 ## Existing Firebase project values
 
