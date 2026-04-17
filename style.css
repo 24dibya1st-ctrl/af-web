@@ -110,6 +110,9 @@ body {
 }
 
 .topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
 }
 
@@ -117,6 +120,15 @@ body {
   width: auto;
   padding: 7px 10px;
   font-size: 13px;
+}
+
+.usage-badge {
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .icon-btn {
@@ -272,6 +284,45 @@ body {
   cursor: pointer;
 }
 
+.input-bar button:disabled,
+.input-bar textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upgrade-banner {
+  position: fixed;
+  left: 280px;
+  right: 0;
+  bottom: 80px;
+  margin: 0 16px;
+  border: 1px solid #4e3342;
+  background: linear-gradient(135deg, #2b1b26, #231a2f);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.upgrade-banner p {
+  margin: 0;
+  color: #f4d7e2;
+  font-size: 13px;
+}
+
+.upgrade-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1320;
+  background: linear-gradient(135deg, #ffc5da, #ffdf9e);
+  cursor: pointer;
+}
+
 .message-row.user {
   justify-content: flex-end;
 }
@@ -354,6 +405,11 @@ body {
   .input-bar {
     left: 0;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .upgrade-banner {
+    left: 0;
+    bottom: 86px;
   }
 }
 

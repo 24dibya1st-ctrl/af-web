@@ -1,6 +1,6 @@
 import { requireAuthForChat, logoutCurrentUser } from "./auth.js";
 import { db } from "./firebase.js";
-import { getAiReply } from "./ai.js";
+import { generateAiReply } from "./ai.js";
 import {
   addDoc,
   collection,
@@ -10,6 +10,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -22,11 +23,19 @@ const chatArea = document.getElementById("chatArea");
 const typingIndicator = document.getElementById("typingIndicator");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const usageCounter = document.getElementById("usageCounter");
+const upgradeBanner = document.getElementById("upgradeBanner");
+const upgradeBtn = document.getElementById("upgradeBtn");
 
 let currentUser = null;
 let activeChatId = null;
 let unsubscribeMessages = null;
 let localChats = [];
+const FREE_DAILY_LIMIT = 20;
+let todaysUsage = 0;
+let usageBlocked = false;
+let activeChatMessages = [];
 
 function scrollToLatest() {
   chatArea.scrollTo({
@@ -38,6 +47,24 @@ function scrollToLatest() {
 function autoGrowInput() {
   messageInput.style.height = "auto";
   messageInput.style.height = `${Math.min(messageInput.scrollHeight, 180)}px`;
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function setUsageState(used) {
+  todaysUsage = used;
+  usageBlocked = todaysUsage >= FREE_DAILY_LIMIT;
+  usageCounter.textContent = `${Math.min(todaysUsage, FREE_DAILY_LIMIT)}/${FREE_DAILY_LIMIT} free messages today`;
+  messageInput.disabled = usageBlocked;
+  sendBtn.disabled = usageBlocked;
+  upgradeBanner.classList.toggle("hidden", !usageBlocked);
+}
+
+function disableInputTemporarily(disabled) {
+  messageInput.disabled = disabled || usageBlocked;
+  sendBtn.disabled = disabled || usageBlocked;
 }
 
 function renderMessage(role, text) {
@@ -96,6 +123,57 @@ function renderHistory() {
   });
 }
 
+async function incrementUsageOrThrow() {
+  const usageDocRef = doc(db, "users", currentUser.uid, "usage", "daily");
+  const today = getTodayKey();
+
+  const nextUsage = await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(usageDocRef);
+    const data = snapshot.exists() ? snapshot.data() : {};
+    const currentDay = data.day || "";
+    const currentCount = typeof data.count === "number" ? data.count : 0;
+    const baseCount = currentDay === today ? currentCount : 0;
+
+    if (baseCount >= FREE_DAILY_LIMIT) {
+      throw new Error("DAILY_LIMIT_REACHED");
+    }
+
+    const updated = baseCount + 1;
+    transaction.set(
+      usageDocRef,
+      {
+        day: today,
+        count: updated,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return updated;
+  });
+
+  setUsageState(nextUsage);
+}
+
+async function loadUsageState() {
+  const usageRef = collection(db, "users", currentUser.uid, "usage");
+  const usageQuery = query(usageRef, limit(10));
+  const usageSnapshot = await getDocs(usageQuery);
+  const today = getTodayKey();
+  let used = 0;
+
+  usageSnapshot.forEach((docSnap) => {
+    if (docSnap.id !== "daily") {
+      return;
+    }
+    const data = docSnap.data();
+    if (data.day === today && typeof data.count === "number") {
+      used = data.count;
+    }
+  });
+
+  setUsageState(used);
+}
+
 function listenToActiveChatMessages(chatId) {
   if (unsubscribeMessages) {
     unsubscribeMessages();
@@ -114,9 +192,11 @@ function listenToActiveChatMessages(chatId) {
 
   unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
     chatArea.innerHTML = "";
+    activeChatMessages = [];
     snapshot.forEach((msgDoc) => {
       const data = msgDoc.data();
       if (data.role && data.text) {
+        activeChatMessages.push({ role: data.role, text: data.text });
         renderMessage(data.role, data.text);
       }
     });
@@ -149,31 +229,60 @@ async function sendMessageToActiveChat(role, text) {
     text,
     createdAt: serverTimestamp(),
   });
+  await addDoc(doc(db, "users", currentUser.uid, "chats", activeChatId), {
+    updatedAt: serverTimestamp(),
+  });
 }
 
 async function askAiAndPersist(userText) {
   showTypingIndicator();
+  disableInputTemporarily(true);
   try {
-    const reply = await getAiReply(userText);
+    const reply = await generateAiReply({
+      userMessage: userText,
+      history: activeChatMessages.slice(-12),
+    });
     await sendMessageToActiveChat("assistant", reply);
   } catch (error) {
     const safeMessage = error?.message || "AI request failed.";
     await sendMessageToActiveChat("assistant", `Error: ${safeMessage}`);
   } finally {
+    disableInputTemporarily(false);
     hideTypingIndicator();
   }
 }
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (usageBlocked) {
+    return;
+  }
   const text = messageInput.value.trim();
   if (!text) {
     return;
   }
+  disableInputTemporarily(true);
+  try {
+    await incrementUsageOrThrow();
+  } catch (error) {
+    disableInputTemporarily(false);
+    if (error?.message === "DAILY_LIMIT_REACHED") {
+      setUsageState(FREE_DAILY_LIMIT);
+      renderMessage(
+        "assistant",
+        "Free daily limit reached (20/20). Upgrade to Pro for unlimited messages."
+      );
+      return;
+    }
+    renderMessage("assistant", "Could not update usage right now. Please retry.");
+    return;
+  }
+
   await sendMessageToActiveChat("user", text);
   messageInput.value = "";
   autoGrowInput();
   await askAiAndPersist(text);
+  disableInputTemporarily(false);
 });
 
 messageInput.addEventListener("keydown", (event) => {
@@ -220,6 +329,13 @@ logoutBtn.addEventListener("click", async () => {
   await logoutCurrentUser();
 });
 
+upgradeBtn.addEventListener("click", () => {
+  renderMessage(
+    "assistant",
+    "Upgrade to Pro is a placeholder for now. Payment integration will come in a later step."
+  );
+});
+
 async function createChatAndActivate(title) {
   const chatsRef = collection(db, "users", currentUser.uid, "chats");
   const chatDoc = await addDoc(chatsRef, {
@@ -254,9 +370,9 @@ requireAuthForChat().then((user) => {
     return;
   }
   currentUser = user;
-  loadOrCreateInitialChats().catch((error) => {
-    console.error("Failed to load chats:", error);
+  Promise.all([loadOrCreateInitialChats(), loadUsageState()]).catch((error) => {
+    console.error("Initialization failed:", error);
     chatArea.innerHTML = "";
-    renderMessage("assistant", "Failed to load chats. Please refresh.");
+    renderMessage("assistant", "Failed to initialize chat. Please refresh.");
   });
 });

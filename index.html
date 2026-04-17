@@ -21,9 +21,17 @@
         <button id="menuBtn" class="icon-btn" type="button" aria-label="Toggle sidebar">☰</button>
         <p>AI Assistant</p>
         <div class="topbar-actions">
+          <span id="usageBadge" class="usage-badge">0 / 20 today</span>
+          <button id="upgradeBtn" class="ghost-btn small upgrade-btn" type="button">
+            Upgrade to Pro
+          </button>
           <button id="logoutBtn" class="ghost-btn small" type="button">Logout</button>
         </div>
       </header>
+
+      <div id="limitNotice" class="limit-notice hidden" aria-live="polite">
+        Free plan daily limit reached (20 messages). Upgrade to Pro for unlimited usage.
+      </div>
 
       <section class="chat-area" id="chatArea" aria-live="polite"></section>
 

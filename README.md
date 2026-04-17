@@ -4,6 +4,7 @@ AF AI Chat scaffold with:
 - ChatGPT-style UI (Option 1)
 - Step 2 auth flow (signup/login/logout + protected chat route)
 - Step 3 real chat flow (Gemini + Firestore persistence)
+- Step 4 free-tier usage limit (20 messages/day + upgrade prompt)
 
 ## Step 2 setup (complete this first)
 
@@ -65,6 +66,24 @@ Open:
   - sends prompt to Gemini API
   - stores AI response in Firestore
   - renders both in chat UI
+
+## Step 4 behavior (20/day limit)
+
+- Free plan includes **20 user messages/day**
+- Usage is tracked in Firestore:
+  - `users/{uid}/usage/daily` with fields:
+    - `dateKey` (`YYYY-MM-DD`, UTC)
+    - `count` (number of user messages sent today)
+- On each send attempt:
+  - app increments usage count in a Firestore transaction
+  - if count exceeds 20, send is blocked
+- UI shows:
+  - remaining messages today
+  - progress bar
+  - `Upgrade to Pro` button (UI placeholder)
+- When limit is reached:
+  - input + send are disabled
+  - upgrade panel becomes prominent
 
 ## Existing Firebase project values
 
