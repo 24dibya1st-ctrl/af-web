@@ -16,6 +16,8 @@ def main() -> None:
 
     print("af-web is running (Firebase linked)")
     print(f"Firebase project: {config.project_id}")
+    print(f"Live URL: {config.hosting_url}")
+    print(f"Alternate URL: {config.hosting_alt_url}")
 
 
 if __name__ == "__main__":

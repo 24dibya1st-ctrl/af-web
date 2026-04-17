@@ -14,7 +14,7 @@ python3 main.py
 
 ```bash
 cp .env.example .env
-# edit .env and fill your real Firebase values
+# edit only FIREBASE_API_KEY in .env (project URLs are prefilled)
 python3 main.py
 ```
 
@@ -29,4 +29,11 @@ export FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
 python3 main.py
 ```
 
-When all three values are set (via `.env` or shell exports), the app reports Firebase as linked.
+When required values are set (via `.env` or shell exports), the app reports Firebase as linked and prints hosting URLs.
+
+## Your Firebase project values
+
+- Project ID: `af-ai-store-f0761e`
+- Site name: `af-ai-store-f0761e`
+- Live URL: `https://af-ai-store-f0761e.web.app`
+- Alternate URL: `https://af-ai-store-f0761e.firebaseapp.com`

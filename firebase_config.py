@@ -13,6 +13,8 @@ class FirebaseConfig:
     project_id: str
     api_key: str
     auth_domain: str
+    hosting_url: str
+    hosting_alt_url: str
 
 
 def load_dotenv(path: str = ".env") -> None:
@@ -49,8 +51,18 @@ def load_firebase_config() -> FirebaseConfig | None:
     if not (project_id and api_key and auth_domain):
         return None
 
+    hosting_url = os.getenv("FIREBASE_HOSTING_URL", "").strip()
+    hosting_alt_url = os.getenv("FIREBASE_HOSTING_ALT_URL", "").strip()
+
+    if not hosting_url:
+        hosting_url = f"https://{project_id}.web.app"
+    if not hosting_alt_url:
+        hosting_alt_url = f"https://{project_id}.firebaseapp.com"
+
     return FirebaseConfig(
         project_id=project_id,
         api_key=api_key,
         auth_domain=auth_domain,
+        hosting_url=hosting_url,
+        hosting_alt_url=hosting_alt_url,
     )
