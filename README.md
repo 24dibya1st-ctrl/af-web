@@ -12,10 +12,13 @@ AF AI Chat scaffold with:
 **Option A — deployed on Firebase Hosting (recommended)**  
 After you deploy, the app loads config automatically from `/__/firebase/init.json`. You do not need to paste keys into the repo.
 
-**Option B — local dev (`python3 -m http.server`) — recommended**  
-Copy `firebase-config.example.js` → **`firebase-config.js`** and paste your Firebase web config from **Project settings → Web app**. That file is **gitignored** and **not deployed**. Then open `http://localhost:8000/login.html` — signup/login will work locally.
+**Option B — paste in browser (works without Hosting deploy)**  
+Open **`firebase-setup.html`**, paste the Web app JSON from Firebase Console → **Project settings → Your apps → Web**, click **Save**. Config is stored in `localStorage` only in that browser. Then use **login.html**.
 
-**Option C — edit repo file**  
+**Option C — local file for dev**  
+Copy `firebase-config.example.js` → **`firebase-config.js`** (gitignored). Good for `python3 -m http.server` or VS Code Live Server.
+
+**Option D — edit repo file (not recommended for secrets)**  
 Edit `firebase.js` and replace every `REPLACE_WITH_...` value with your Firebase web app config from **Project settings**:
 
 - `apiKey`
