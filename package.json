@@ -2,6 +2,7 @@
   "name": "af-web",
   "private": true,
   "scripts": {
+    "dev": "bash scripts/start-dev.sh",
     "verify:hosting": "node scripts/verify-hosting.mjs",
     "deploy": "npm run verify:hosting && firebase deploy --only hosting,firestore --project af-ai-store-f0761e"
   }
