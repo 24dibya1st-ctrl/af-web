@@ -53,6 +53,26 @@ async function fetchHostingFirebaseConfig() {
   }
 }
 
+/** Optional local file for localhost / python http.server — not deployed. */
+async function loadLocalFirebaseConfigFile() {
+  try {
+    const mod = await import("./firebase-config.js");
+    const cfg = mod.firebaseWebConfig;
+    if (
+      cfg &&
+      typeof cfg === "object" &&
+      typeof cfg.apiKey === "string" &&
+      cfg.apiKey.trim() &&
+      !cfg.apiKey.startsWith("REPLACE_WITH_")
+    ) {
+      return cfg;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function buildFallbackConfig() {
   return {
     apiKey: "",
@@ -68,6 +88,11 @@ async function resolveFirebaseConfig() {
   const hostingConfig = await fetchHostingFirebaseConfig();
   if (hostingConfig) {
     return hostingConfig;
+  }
+
+  const localFileConfig = await loadLocalFirebaseConfigFile();
+  if (localFileConfig) {
+    return localFileConfig;
   }
 
   if (manualConfigLooksComplete(manualFirebaseConfig)) {

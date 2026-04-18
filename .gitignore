@@ -1,4 +1,5 @@
 .env
 secrets.js
+firebase-config.js
 __pycache__/
 *.pyc

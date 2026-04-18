@@ -12,7 +12,8 @@
       "node_modules/**",
       "__pycache__/**",
       "*.py",
-      "secrets.js"
+      "secrets.js",
+      "firebase-config.js"
     ],
     "headers": [
       {

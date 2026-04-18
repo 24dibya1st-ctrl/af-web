@@ -71,7 +71,7 @@ function initLoginPage() {
 
   if (!isFirebaseConfigured()) {
     showStatus(
-      "Firebase is not ready. Deploy to Firebase Hosting (uses auto-config), or paste your web app keys into firebase.js."
+      "Firebase not configured. For localhost: copy firebase-config.example.js to firebase-config.js and add your web config. Or deploy to Hosting / edit firebase.js."
     );
     loginBtn.disabled = true;
     signupBtn.disabled = true;
