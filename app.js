@@ -536,7 +536,7 @@ requireAuthForChat().then((user) => {
     chatArea.innerHTML = "";
     renderMessage(
       "assistant",
-      "Firebase is not configured. Deploy this site to Firebase Hosting (auto-loads config), or paste your Firebase web app keys into firebase.js and refresh."
+      "Firebase is not configured.\n\n1) Open firebase-setup.html in this folder and paste your Web app config from Firebase Console → Project settings.\n\n2) Or deploy to Hosting (/__/firebase/init.json loads automatically).\n\nThen refresh this page."
     );
     disableInputTemporarily(true);
     messageInput.placeholder = "Configure Firebase to chat…";

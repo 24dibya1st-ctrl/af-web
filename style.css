@@ -690,3 +690,46 @@ body {
 .gemini-banner button {
   flex-shrink: 0;
 }
+
+.setup-card {
+  max-width: 520px;
+}
+
+.setup-steps {
+  margin: 0 0 16px 1.1em;
+  padding: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.setup-steps code {
+  font-size: 12px;
+}
+
+.setup-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #101521;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 13px;
+  font-family: ui-monospace, monospace;
+  outline: none;
+  resize: vertical;
+}
+
+.setup-status {
+  min-height: 22px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.setup-status.ok {
+  color: #7dffb3;
+}
+
+.setup-status.err {
+  color: var(--danger);
+}

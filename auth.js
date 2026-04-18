@@ -71,7 +71,7 @@ function initLoginPage() {
 
   if (!isFirebaseConfigured()) {
     showStatus(
-      "Firebase not configured. For localhost: copy firebase-config.example.js to firebase-config.js and add your web config. Or deploy to Hosting / edit firebase.js."
+      "Firebase not configured. Open firebase-setup.html and paste your Web app JSON from Firebase Console → Project settings → Your apps → Web."
     );
     loginBtn.disabled = true;
     signupBtn.disabled = true;

@@ -5,6 +5,7 @@ import {
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { FIREBASE_WEB_CONFIG_KEY } from "./firebase-config-constants.js";
 
 /**
  * Replace with your Firebase web app config from the console, or leave placeholders
@@ -73,6 +74,30 @@ async function loadLocalFirebaseConfigFile() {
   }
 }
 
+/** Pasted via firebase-setup.html (stored in browser only). */
+function loadFirebaseConfigFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(FIREBASE_WEB_CONFIG_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof parsed.apiKey === "string" &&
+      parsed.apiKey.trim() &&
+      typeof parsed.projectId === "string" &&
+      parsed.projectId.trim()
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function buildFallbackConfig() {
   return {
     apiKey: "",
@@ -85,14 +110,22 @@ function buildFallbackConfig() {
 }
 
 async function resolveFirebaseConfig() {
+  // Production + deployed Hosting: automatic config first
   const hostingConfig = await fetchHostingFirebaseConfig();
   if (hostingConfig) {
     return hostingConfig;
   }
 
+  // Dev: firebase-config.js (repo-local, gitignored)
   const localFileConfig = await loadLocalFirebaseConfigFile();
   if (localFileConfig) {
     return localFileConfig;
+  }
+
+  // Same-browser setup page (firebase-setup.html) — works before Hosting deploy
+  const storedConfig = loadFirebaseConfigFromLocalStorage();
+  if (storedConfig) {
+    return storedConfig;
   }
 
   if (manualConfigLooksComplete(manualFirebaseConfig)) {

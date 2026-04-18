@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase setup — AF AI Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-card setup-card">
+      <h1>Connect Firebase</h1>
+      <p class="auth-subtitle">
+        Use this when the app says &quot;Firebase is not configured&quot;. One-time per browser.
+      </p>
+      <ol class="setup-steps">
+        <li>Open <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">Firebase Console</a> → your project → Project settings (gear).</li>
+        <li>Under <strong>Your apps</strong>, pick the <strong>Web</strong> app (or add one).</li>
+        <li>Copy the full <code>firebaseConfig</code> object (or entire config JSON).</li>
+        <li>Paste below and click <strong>Save &amp; continue</strong>.</li>
+      </ol>
+
+      <label class="modal-label" for="firebaseJson">Firebase web config (JSON)</label>
+      <textarea
+        id="firebaseJson"
+        class="setup-textarea"
+        rows="10"
+        placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }'
+      ></textarea>
+      <p id="setupStatus" class="setup-status" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="saveFirebaseConfig" class="modal-primary">Save &amp; continue</button>
+        <button type="button" id="clearFirebaseConfig" class="ghost-btn small">Clear saved config</button>
+        <a class="ghost-btn small" href="login.html" style="display: inline-block; text-decoration: none; text-align: center;">Back to login</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="firebase-setup.js"></script>
+</body>
+</html>

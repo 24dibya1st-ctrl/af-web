@@ -13,9 +13,12 @@ const root = join(__dirname, "..");
 const required = [
   "index.html",
   "login.html",
+  "firebase-setup.html",
   "app.js",
   "auth.js",
   "firebase.js",
+  "firebase-config-constants.js",
+  "firebase-setup.js",
   "ai.js",
   "style.css",
 ];
