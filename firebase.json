@@ -3,6 +3,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
+    "site": "af-ai-store-f0761e",
     "public": ".",
     "ignore": [
       "firebase.json",
