@@ -28,8 +28,13 @@ Also make sure in Firebase Console:
 
 ## Step 3 setup (real AI + saved chat)
 
-1. **Gemini API key (per user, in the browser)**  
-   After login, click **AI key** in the top bar (or **Add key** on the banner). Paste a key from [Google AI Studio](https://aistudio.google.com/apikey). It is stored in **`localStorage`** as `GEMINI_API_KEY` for that browser only.
+1. **Gemini API key**
+
+   **Production / real users:** After login, click **AI key** and paste their own key from [Google AI Studio](https://aistudio.google.com/apikey). Stored in **`localStorage`** only for that browser.
+
+   **Local testing without typing the key each time:** Copy `secrets.example.js` → `secrets.js`, put your **new rotated** API key in `GEMINI_API_KEY_DEV`. File `secrets.js` is **gitignored** and **not deployed** to Hosting. Never commit secrets.
+
+   If you pasted a key in chat anywhere, **revoke it** in Google Cloud and create a **new** key — treat the old one as leaked.
 
 2. In Firebase Console, keep Firestore enabled.
 

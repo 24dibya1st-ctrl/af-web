@@ -11,7 +11,8 @@
       ".github/**",
       "node_modules/**",
       "__pycache__/**",
-      "*.py"
+      "*.py",
+      "secrets.js"
     ],
     "headers": [
       {

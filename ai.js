@@ -1,7 +1,30 @@
-const GEMINI_MODEL = "gemini-1.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-1.5-flash";
+
+let devGeminiKey = "";
+let devGeminiModel = "";
+
+try {
+  const secrets = await import("./secrets.js");
+  if (secrets.GEMINI_API_KEY_DEV?.trim()) {
+    devGeminiKey = secrets.GEMINI_API_KEY_DEV.trim();
+  }
+  if (secrets.GEMINI_MODEL_OVERRIDE?.trim()) {
+    devGeminiModel = secrets.GEMINI_MODEL_OVERRIDE.trim();
+  }
+} catch {
+  /* secrets.js optional — local dev only */
+}
+
+function getEffectiveModel() {
+  return devGeminiModel || DEFAULT_GEMINI_MODEL;
+}
 
 function getGeminiApiKey() {
-  return localStorage.getItem("GEMINI_API_KEY")?.trim() || "";
+  const fromStorage = localStorage.getItem("GEMINI_API_KEY")?.trim() || "";
+  if (fromStorage) {
+    return fromStorage;
+  }
+  return devGeminiKey;
 }
 
 function setGeminiApiKey(apiKey) {
@@ -15,10 +38,11 @@ function getPromptInstruction() {
 async function generateAiReply({ userMessage, history = [] }) {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error("Missing Gemini API key. Set it in chat settings first.");
+    throw new Error("Missing Gemini API key. Use the AI key button or add secrets.js locally.");
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const model = getEffectiveModel();
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const historyText = history
     .map((entry) => `${entry.role === "assistant" ? "Assistant" : "User"}: ${entry.text}`)
