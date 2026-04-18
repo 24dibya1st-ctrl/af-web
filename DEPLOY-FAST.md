@@ -42,3 +42,15 @@ firebase deploy --only hosting --project af-ai-store-f0761e --debug
 ```bash
 npm run verify:hosting
 ```
+
+---
+
+## Deploy from GitHub (no local login each time)
+
+1. On your PC once: `firebase login:ci` → copy the token.
+2. GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `FIREBASE_TOKEN`
+   - Value: paste token
+3. **Actions** tab → workflow **Deploy Firebase** → **Run workflow**
+
+The workflow deploys Hosting + Firestore using that token (see `.github/workflows/deploy-firebase.yml`).
