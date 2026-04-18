@@ -27,6 +27,7 @@ Edit `firebase.js` and replace every `REPLACE_WITH_...` value with your Firebase
 
 Also make sure in Firebase Console:
 - Authentication -> Sign-in method -> **Email/Password enabled**
+- Authentication -> Settings -> **Authorized domains** → include **`localhost`** (needed for local testing)
 - Firestore database is created
 
 ## Step 3 setup (real AI + saved chat)
