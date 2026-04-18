@@ -14,10 +14,46 @@ function showStatus(message) {
 }
 
 export function onAuthStateChangedSafe(callback) {
+  if (!auth) {
+    callback(null);
+    return () => {};
+  }
   return onAuthStateChanged(auth, callback);
 }
 
 export async function signOutSafe() {
+  if (!auth) {
+    window.location.href = "login.html";
+    return;
+  }
+  await signOut(auth);
+  window.location.href = "login.html";
+}
+
+/** Resolves once Firestore-backed session is known; redirects guests to login. */
+export function requireAuthForChat() {
+  return new Promise((resolve) => {
+    if (!auth) {
+      resolve(null);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      if (!user) {
+        window.location.href = "login.html";
+        resolve(null);
+        return;
+      }
+      resolve(user);
+    });
+  });
+}
+
+export async function logoutCurrentUser() {
+  if (!auth) {
+    window.location.href = "login.html";
+    return;
+  }
   await signOut(auth);
   window.location.href = "login.html";
 }
@@ -34,7 +70,9 @@ function initLoginPage() {
   }
 
   if (!isFirebaseConfigured()) {
-    showStatus("Firebase is not configured yet. Update firebase.js first.");
+    showStatus(
+      "Firebase is not ready. Deploy to Firebase Hosting (uses auto-config), or paste your web app keys into firebase.js."
+    );
     loginBtn.disabled = true;
     signupBtn.disabled = true;
     return;

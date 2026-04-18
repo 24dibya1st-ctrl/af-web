@@ -7,9 +7,13 @@ AF AI Chat scaffold with:
 - Step 4 free-tier usage limit (20 messages/day + upgrade prompt)
 - Step 6 usage UX (progress bar + remaining count + Pro status)
 
-## Step 2 setup (complete this first)
+## Step 2 setup (Firebase)
 
-Edit `firebase.js` and replace placeholder values in `firebaseConfig` with your real Firebase web app config:
+**Option A — deployed on Firebase Hosting (recommended)**  
+After you deploy, the app loads config automatically from `/__/firebase/init.json`. You do not need to paste keys into the repo.
+
+**Option B — local dev or non-Firebase hosting**  
+Edit `firebase.js` and replace every `REPLACE_WITH_...` value with your Firebase web app config from **Project settings**:
 
 - `apiKey`
 - `authDomain`
@@ -57,7 +61,7 @@ Project is set to:
 
 Hosting config files are already included:
 - `.firebaserc`
-- `firebase.json`
+- `firebase.json` (static files are served as files; no catch-all rewrite that breaks `login.html` / JS)
 
 Deploy commands:
 
@@ -70,6 +74,8 @@ firebase deploy --only hosting
 After successful deploy, open:
 - `https://af-ai-store-f0761e.web.app`
 - `https://af-ai-store-f0761e.firebaseapp.com`
+
+If you still see **404**, the site has not been deployed to this project yet — run the deploy commands above from this repository root.
 
 ## Step 2 behavior
 

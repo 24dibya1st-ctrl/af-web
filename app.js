@@ -1,10 +1,11 @@
 import { requireAuthForChat, logoutCurrentUser } from "./auth.js";
-import { db } from "./firebase.js";
+import { db, isFirebaseConfigured } from "./firebase.js";
 import { generateAiReply } from "./ai.js";
 import {
   addDoc,
   collection,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -421,6 +422,16 @@ async function initializeFirstChatIfNeeded() {
 }
 
 requireAuthForChat().then((user) => {
+  if (!isFirebaseConfigured() || !db) {
+    chatArea.innerHTML = "";
+    renderMessage(
+      "assistant",
+      "Firebase is not configured. Deploy this site to Firebase Hosting (auto-loads config), or paste your Firebase web app keys into firebase.js and refresh."
+    );
+    disableInputTemporarily(true);
+    messageInput.placeholder = "Configure Firebase to chat…";
+    return;
+  }
   if (!user) {
     return;
   }
