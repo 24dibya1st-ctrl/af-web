@@ -28,8 +28,9 @@ Also make sure in Firebase Console:
 
 ## Step 3 setup (real AI + saved chat)
 
-1. In `ai.js`, replace:
-   - `REPLACE_WITH_GEMINI_API_KEY`
+1. **Gemini API key (per user, in the browser)**  
+   After login, click **AI key** in the top bar (or **Add key** on the banner). Paste a key from [Google AI Studio](https://aistudio.google.com/apikey). It is stored in **`localStorage`** as `GEMINI_API_KEY` for that browser only.
+
 2. In Firebase Console, keep Firestore enabled.
 
 Firestore structure used:

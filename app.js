@@ -1,6 +1,6 @@
 import { requireAuthForChat, logoutCurrentUser } from "./auth.js";
 import { db, isFirebaseConfigured } from "./firebase.js";
-import { generateAiReply } from "./ai.js";
+import { generateAiReply, getGeminiApiKey, setGeminiApiKey } from "./ai.js";
 import {
   addDoc,
   collection,
@@ -25,11 +25,21 @@ const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 const usageBadge = document.getElementById("usageBadge");
-const usageProgress = document.getElementById("usageProgress");
-const usageDetail = document.getElementById("usageDetail");
+const usageProgressFill = document.getElementById("usageProgressFill");
+const usageProgressText = document.getElementById("usageProgressText");
+const usageRemainingText = document.getElementById("usageRemainingText");
 const planBadge = document.getElementById("planBadge");
 const limitNotice = document.getElementById("limitNotice");
 const upgradeBtn = document.getElementById("upgradeBtn");
+const geminiSetupBtn = document.getElementById("geminiSetupBtn");
+const geminiBanner = document.getElementById("geminiBanner");
+const geminiBannerBtn = document.getElementById("geminiBannerBtn");
+const geminiModal = document.getElementById("geminiModal");
+const geminiModalBackdrop = document.getElementById("geminiModalBackdrop");
+const geminiModalClose = document.getElementById("geminiModalClose");
+const geminiKeyInput = document.getElementById("geminiKeyInput");
+const geminiSaveBtn = document.getElementById("geminiSaveBtn");
+const geminiKeyStatus = document.getElementById("geminiKeyStatus");
 
 let currentUser = null;
 let activeChatId = null;
@@ -42,6 +52,71 @@ let todaysUsage = 0;
 let usageBlocked = false;
 let activeChatMessages = [];
 let currentPlan = "free";
+let geminiBlocked = true;
+
+function hasGeminiKey() {
+  return Boolean(getGeminiApiKey());
+}
+
+function syncGeminiUi() {
+  geminiBlocked = !hasGeminiKey();
+  if (geminiBanner) {
+    geminiBanner.classList.toggle("hidden", !geminiBlocked);
+  }
+  if (geminiKeyInput && hasGeminiKey()) {
+    geminiKeyInput.value = "";
+    geminiKeyInput.placeholder = "Key saved — enter a new key to replace";
+  }
+  chatForm?.classList.toggle("blocked-no-key", geminiBlocked);
+  if (geminiBlocked && messageInput && !usageBlocked) {
+    messageInput.placeholder = "Add Gemini API key first (AI key button)…";
+  } else if (messageInput && !usageBlocked) {
+    messageInput.placeholder = "Message AF AI Chat…";
+  }
+  updateSendDisabledState();
+}
+
+function updateSendDisabledState() {
+  const blocked = usageBlocked || geminiBlocked;
+  messageInput.disabled = blocked;
+  sendBtn.disabled = blocked;
+}
+
+function openGeminiModal() {
+  if (!geminiModal) {
+    return;
+  }
+  geminiModal.classList.remove("hidden");
+  if (geminiKeyStatus) {
+    geminiKeyStatus.textContent = "";
+    geminiKeyStatus.className = "modal-status";
+  }
+  if (geminiKeyInput) {
+    geminiKeyInput.focus();
+  }
+}
+
+function closeGeminiModal() {
+  geminiModal?.classList.add("hidden");
+}
+
+function saveGeminiKeyFromModal() {
+  const raw = geminiKeyInput?.value?.trim() || "";
+  if (!raw) {
+    if (geminiKeyStatus) {
+      geminiKeyStatus.textContent = "Paste your API key, or close and use another device.";
+      geminiKeyStatus.className = "modal-status err";
+    }
+    return;
+  }
+  setGeminiApiKey(raw);
+  if (geminiKeyStatus) {
+    geminiKeyStatus.textContent = "Saved. You can chat now.";
+    geminiKeyStatus.className = "modal-status ok";
+  }
+  syncGeminiUi();
+  setTimeout(() => closeGeminiModal(), 600);
+}
 
 function scrollToLatest() {
   chatArea.scrollTo({
@@ -73,22 +148,33 @@ function setUsageState(used, plan = currentPlan) {
     ? "Pro plan active"
     : `${clampedUsage} / ${FREE_DAILY_LIMIT} today`;
   usageBadge.classList.toggle("pro", isPro);
-  usageProgress.style.width = `${isPro ? 100 : progressPercent}%`;
-  usageDetail.textContent = isPro
-    ? "Unlimited messages on Pro"
-    : `${remaining} free messages remaining today`;
+  if (usageProgressFill) {
+    usageProgressFill.style.width = `${isPro ? 100 : progressPercent}%`;
+    usageProgressFill.classList.toggle("pro", isPro);
+    usageProgressFill.classList.toggle("near-limit", !isPro && clampedUsage >= 16 && clampedUsage < FREE_DAILY_LIMIT);
+    usageProgressFill.classList.toggle("at-limit", !isPro && clampedUsage >= FREE_DAILY_LIMIT);
+  }
+  if (usageProgressText) {
+    usageProgressText.textContent = isPro
+      ? "Pro — unlimited messages"
+      : `${clampedUsage} / ${FREE_DAILY_LIMIT} used today`;
+  }
+  if (usageRemainingText) {
+    usageRemainingText.textContent = isPro
+      ? "No daily cap"
+      : `${remaining} free messages left`;
+  }
   planBadge.textContent = isPro ? "Plan: Pro" : "Plan: Free";
   planBadge.classList.toggle("pro", isPro);
 
   upgradeBtn.classList.toggle("hidden", isPro);
-  messageInput.disabled = usageBlocked;
-  sendBtn.disabled = usageBlocked;
   limitNotice.classList.toggle("hidden", !usageBlocked);
+  updateSendDisabledState();
 }
 
 function disableInputTemporarily(disabled) {
-  messageInput.disabled = disabled || usageBlocked;
-  sendBtn.disabled = disabled || usageBlocked;
+  messageInput.disabled = disabled || usageBlocked || geminiBlocked;
+  sendBtn.disabled = disabled || usageBlocked || geminiBlocked;
 }
 
 function renderMessage(role, text) {
@@ -295,6 +381,10 @@ async function askAiAndPersist(userText) {
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (geminiBlocked) {
+    openGeminiModal();
+    return;
+  }
   if (usageBlocked) {
     return;
   }
@@ -377,6 +467,24 @@ upgradeBtn.addEventListener("click", () => {
   );
 });
 
+geminiSetupBtn?.addEventListener("click", () => openGeminiModal());
+geminiBannerBtn?.addEventListener("click", () => openGeminiModal());
+geminiModalBackdrop?.addEventListener("click", closeGeminiModal);
+geminiModalClose?.addEventListener("click", closeGeminiModal);
+geminiSaveBtn?.addEventListener("click", saveGeminiKeyFromModal);
+geminiKeyInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    saveGeminiKeyFromModal();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && geminiModal && !geminiModal.classList.contains("hidden")) {
+    closeGeminiModal();
+  }
+});
+
 async function createChatAndActivate(title) {
   const chatsRef = collection(db, "users", currentUser.uid, "chats");
   const chatDoc = await addDoc(chatsRef, {
@@ -421,6 +529,8 @@ async function initializeFirstChatIfNeeded() {
   }
 }
 
+syncGeminiUi();
+
 requireAuthForChat().then((user) => {
   if (!isFirebaseConfigured() || !db) {
     chatArea.innerHTML = "";
@@ -436,6 +546,7 @@ requireAuthForChat().then((user) => {
     return;
   }
   currentUser = user;
+  syncGeminiUi();
   subscribeToChats();
   subscribeUsageState();
   Promise.resolve(initializeFirstChatIfNeeded())

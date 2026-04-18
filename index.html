@@ -21,6 +21,7 @@
         <button id="menuBtn" class="icon-btn" type="button" aria-label="Toggle sidebar">☰</button>
         <p>AI Assistant</p>
         <div class="topbar-actions">
+          <button id="geminiSetupBtn" class="ghost-btn small" type="button">AI key</button>
           <span id="planBadge" class="plan-badge">Free plan</span>
           <span id="usageBadge" class="usage-badge">0 / 20 today</span>
           <button id="upgradeBtn" class="ghost-btn small upgrade-btn" type="button">
@@ -31,14 +32,19 @@
       </header>
 
       <section class="usage-panel" aria-live="polite">
-        <div class="usage-panel-head">
-          <p id="usageProgressText">0 / 20 used today</p>
-          <p id="usageRemainingText">20 remaining</p>
+        <div class="usage-row">
+          <p id="usageProgressText" class="usage-text">0 / 20 used today</p>
+          <p id="usageRemainingText" class="usage-text">20 remaining</p>
         </div>
-        <div class="usage-progress-track">
+        <div class="usage-progress">
           <div id="usageProgressFill" class="usage-progress-fill"></div>
         </div>
       </section>
+
+      <div id="geminiBanner" class="gemini-banner hidden" aria-live="polite">
+        <span>Add your Gemini API key to enable AI replies.</span>
+        <button type="button" id="geminiBannerBtn" class="ghost-btn small">Add key</button>
+      </div>
 
       <div id="limitNotice" class="limit-notice hidden" aria-live="polite">
         Free plan daily limit reached (20 messages). Upgrade to Pro for unlimited usage.
@@ -61,6 +67,25 @@
         <button type="submit" id="sendBtn">Send</button>
       </form>
     </main>
+  </div>
+
+  <div id="geminiModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="geminiModalTitle">
+    <div class="modal-backdrop" id="geminiModalBackdrop"></div>
+    <div class="modal-card">
+      <h2 id="geminiModalTitle">Connect Google Gemini</h2>
+      <p class="modal-help">
+        Get a free API key from
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
+        Your key is stored only in this browser (localStorage).
+      </p>
+      <label class="modal-label" for="geminiKeyInput">Gemini API key</label>
+      <input id="geminiKeyInput" type="password" class="modal-input" autocomplete="off" placeholder="Paste your API key" />
+      <p id="geminiKeyStatus" class="modal-status" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="geminiSaveBtn" class="modal-primary">Save &amp; start chatting</button>
+        <button type="button" id="geminiModalClose" class="ghost-btn small">Close</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="app.js"></script>
