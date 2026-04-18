@@ -68,8 +68,10 @@ Deploy commands:
 ```bash
 firebase login
 firebase use af-ai-store-f0761e
-firebase deploy --only hosting
+firebase deploy --only hosting,firestore
 ```
+
+Deploy includes **Firestore security rules** (`firestore.rules`). Without deploying rules, chat and usage saves can fail with **permission denied** for real users.
 
 After successful deploy, open:
 - `https://af-ai-store-f0761e.web.app`
