@@ -1,36 +1,29 @@
 name: Deploy to Firebase
-
 on:
   push:
-      branches:
-            - main
-              workflow_dispatch:
-
-              jobs:
-                deploy:
-                    name: Deploy to Firebase Hosting
-                        runs-on: ubuntu-latest
-
-                            steps:
-                                  - name: Checkout Code
-                                          uses: actions/checkout@v4
-
-                                                - name: Deploy to Firebase Hosting
-                                                        uses: FirebaseExtended/action-hosting-deploy@v0
-                                                                with:
-                                                                          repoToken: ${{ secrets.GITHUB_TOKEN }}
-                                                                                    firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AF_AI_STORE_F0761E }}
-                                                                                              channelId: live
-                                                                                                        projectId: af-ai-store-f0761e
-                                                                                                        
-                                                                                                              - name: Smoke Test
-                                                                                                                      run: |
-                                                                                                                                sleep 15
-                                                                                                                                          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://af-ai-store-f0761e.web.app/)
-                                                                                                                                                    echo "HTTP status: $STATUS"
-                                                                                                                                                              if [ "$STATUS" != "200" ] && [ "$STATUS" != "304" ]; then
-                                                                                                                                                                          echo "Smoke test failed - got HTTP $STATUS"
-                                                                                                                                                                                      exit 1
-                                                                                                                                                                                                fi
-                                                                                                                                                                                                          echo "Site is live!"
-                                                                                                                                                                                                          
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AF_AI_STORE_F0761E }}
+          channelId: live
+          projectId: af-ai-store-f0761e
+      - name: Smoke Test
+        run: |
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://af-ai-store-f0761e.web.app/)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "304" ]; then
+            echo "Smoke test failed - got HTTP $STATUS"
+            exit 1
+          fi
+          echo "Site is live!"
