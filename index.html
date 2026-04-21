@@ -1,93 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AF AI Chat</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h1>AF AI Chat</h1>
-        <button id="newChatBtn" class="ghost-btn" type="button">+ New chat</button>
-      </div>
-      <nav class="chat-history" id="chatHistory" aria-label="Chat history"></nav>
-    </aside>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AF (Account File) | Global Deep Intelligence</title>
+<meta name="description" content="AF Global - Multi-agent AI for elite business strategy, CA AI, and market dominance.">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+<style>
+:root{--surface:#12121d;--surface-low:#1b1a26;--surface-container:#1f1e2a;--surface-high:#292935;--surface-lowest:#0d0d18;--primary:#c6bfff;--primary-container:#6c5ce7;--tertiary:#2edcd7;--on-surface:#e3e0f1;--on-surface-dim:#c8c4d7;--outline:rgba(146,142,160,0.15);--error:#ef4444;--up:#10b981;--shadow-purple:0 20px 40px rgba(108,92,231,0.08)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Manrope',sans-serif;background:var(--surface);color:var(--on-surface)}
+h1,h2,h3,.logo-text{font-family:'Space Grotesk',sans-serif}
+.app{display:flex;height:100vh}
+.sidebar{width:260px;flex-shrink:0;background:var(--surface-lowest);display:flex;flex-direction:column;padding:28px 20px;box-shadow:var(--shadow-purple)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--primary-container),var(--primary));display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text{font-size:17px;font-weight:700;color:var(--primary)}
+.logo-sub{font-size:10px;color:var(--on-surface-dim)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px}
+.badge{background:rgba(108,92,231,0.08);border:1px solid rgba(108,92,231,0.2);color:var(--primary);font-size:11px;padding:5px 10px;border-radius:20px;cursor:pointer}
+nav{flex:1;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;color:var(--on-surface-dim);font-size:13.5px;cursor:pointer;border:none;background:none;text-align:left;transition:all .2s}
+.nav-item.active{background:rgba(108,92,231,0.12);color:var(--primary)}
+.sign-in-btn{margin-top:16px;width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--outline);color:var(--on-surface);font-size:13px;padding:11px 16px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--surface-low)}
+.topbar-title{font-size:13px;color:var(--on-surface-dim)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.status-pill{display:flex;align-items:center;gap:6px;background:rgba(46,220,215,0.08);border:1px solid rgba(46,220,215,0.2);padding:6px 13px;border-radius:20px;font-size:11.5px;color:var(--tertiary)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--tertiary);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pay-btn{border:none;padding:8px 15px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer}
+.stripe-btn{background:linear-gradient(135deg,#6c5ce7,#c6bfff);color:#1a0060}
+.razorpay-btn{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
+.workspace{flex:1;display:flex;overflow:hidden}
+.chat-area{flex:1;display:flex;flex-direction:column;padding:20px 24px;min-width:0}
+.chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-bottom:8px}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse}
+.bubble{background:var(--surface-container);padding:13px 17px;border-radius:16px;max-width:72%;font-size:13.5px;line-height:1.65}
+.msg.user .bubble{background:rgba(108,92,231,0.15);border:1px solid rgba(108,92,231,0.15)}
+.input-wrap{padding:16px 0 0}
+.input-box{display:flex;align-items:center;gap:10px;background:var(--surface-container);border-radius:14px;padding:10px 16px}
+.input-box input{flex:1;background:none;border:none;outline:none;color:var(--on-surface);font-size:13.5px}
+.icon-btn{width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px}
+.send{background:linear-gradient(135deg,var(--primary-container),var(--primary));color:#fff}
+.panel{width:230px;flex-shrink:0;background:var(--surface-low);padding:20px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--on-surface-dim);margin-bottom:10px}
+.ticker{display:flex;justify-content:space-between;padding:7px 0;font-size:12.5px}
+.up{color:var(--up)}.down{color:var(--error)}
+.layer{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;margin-bottom:4px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:var(--on-surface-dim)}
+.layer-status{font-size:10px;color:var(--tertiary)}
+.footer-note{font-size:9.5px;color:rgba(46,220,215,0.5);text-align:center;margin-top:auto;padding-top:12px}
+<div id="toast" style="position:fixed;bottom:20px;right:20px;background:#1f1e2a;color:#e3e0f1;padding:12px 20px;border-radius:10px;display:none;z-index:9999;border-left:4px solid #c6bfff"></div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDPrwG3BsLCLz3tsn6lvSuL9vQJg3VK-Gc",
+  authDomain: "af-ai-store-f0761e.firebaseapp.com",
+  projectId: "af-ai-store-f0761e",
+  storageBucket: "af-ai-store-f0761e.appspot.com",
+  messagingSenderId: "850581608566",
+  appId: "1:850581608566:web:4306165c218e03b6d8a757"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
-    <main class="chat-layout">
-      <header class="chat-topbar">
-        <button id="menuBtn" class="icon-btn" type="button" aria-label="Toggle sidebar">☰</button>
-        <p>AI Assistant</p>
-        <div class="topbar-actions">
-          <button id="geminiSetupBtn" class="ghost-btn small" type="button">AI key</button>
-          <span id="planBadge" class="plan-badge">Free plan</span>
-          <span id="usageBadge" class="usage-badge">0 / 20 today</span>
-          <button id="upgradeBtn" class="ghost-btn small upgrade-btn" type="button">
-            Upgrade to Pro
-          </button>
-          <button id="logoutBtn" class="ghost-btn small" type="button">Logout</button>
-        </div>
-      </header>
+function showToast(m, e=true) {
+  const t = document.getElementById("toast");
+  if(!t)return;
+  t.innerText = m; t.style.display = "block";
+  t.style.borderLeftColor = e ? "#ef4444" : "#c6bfff";
+  setTimeout(()=> t.style.display="none", 5000);
+}
 
-      <section class="usage-panel" aria-live="polite">
-        <div class="usage-row">
-          <p id="usageProgressText" class="usage-text">0 / 20 used today</p>
-          <p id="usageRemainingText" class="usage-text">20 remaining</p>
-        </div>
-        <div class="usage-progress">
-          <div id="usageProgressFill" class="usage-progress-fill"></div>
-        </div>
-      </section>
+document.addEventListener("DOMContentLoaded", () => {
+  const chat = document.getElementById("chat");
+  const userInput = document.getElementById("user-input");
+  const loginBtn = document.getElementById("login-btn");
+  
+  if(loginBtn) loginBtn.onclick = () => {
+    auth.signInWithPopup(provider).catch(err => {
+      showToast(err.code === 'auth/unauthorized-domain' ? "⚠️ Domain not authorized" : err.message);
+    });
+  };
+  
+  auth.onAuthStateChanged(u => {
+    if(u && loginBtn) loginBtn.innerText = "Active: " + u.displayName;
+  });
+});
 
-      <div id="geminiBanner" class="gemini-banner hidden" aria-live="polite">
-        <span>Add your Gemini API key to enable AI replies.</span>
-        <button type="button" id="geminiBannerBtn" class="ghost-btn small">Add key</button>
-      </div>
+function addMsg(t, r, a) {
+  const chat = document.getElementById("chat");
+  if(!chat) return;
+  const d = document.createElement("div");
+  d.className = "msg " + r;
+  const av = r === "user" ? "U" : (a || "AF");
+  const safeText = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  d.innerHTML = `<div class="av">${av}</div><div class="bubble">${safeText}</div>`;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-      <div id="limitNotice" class="limit-notice hidden" aria-live="polite">
-        Free plan daily limit reached (20 messages). Upgrade to Pro for unlimited usage.
-      </div>
+function send() {
+  const input = document.getElementById("user-input");
+  const q = input.value.trim();
+  if(!q) return;
+  addMsg(q, "user");
+  input.value = "";
+  setTimeout(() => addMsg("**Assistant:** How can I help?", "assistant"), 600);
+}
 
-      <section class="chat-area" id="chatArea" aria-live="polite"></section>
-
-      <div class="typing-indicator hidden" id="typingIndicator" aria-live="polite">
-        <span></span><span></span><span></span>
-        <p>AI is thinking...</p>
-      </div>
-
-      <form class="input-bar" id="chatForm">
-        <textarea
-          id="messageInput"
-          placeholder="Message AF AI Chat..."
-          rows="1"
-          autocomplete="off"
-        ></textarea>
-        <button type="submit" id="sendBtn">Send</button>
-      </form>
-    </main>
-  </div>
-
-  <div id="geminiModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="geminiModalTitle">
-    <div class="modal-backdrop" id="geminiModalBackdrop"></div>
-    <div class="modal-card">
-      <h2 id="geminiModalTitle">Connect Google Gemini</h2>
-      <p class="modal-help">
-        Get a free API key from
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
-        Your key is stored only in this browser (localStorage).
-      </p>
-      <label class="modal-label" for="geminiKeyInput">Gemini API key</label>
-      <input id="geminiKeyInput" type="password" class="modal-input" autocomplete="off" placeholder="Paste your API key" />
-      <p id="geminiKeyStatus" class="modal-status" aria-live="polite"></p>
-      <div class="modal-actions">
-        <button type="button" id="geminiSaveBtn" class="modal-primary">Save &amp; start chatting</button>
-        <button type="button" id="geminiModalClose" class="ghost-btn small">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+const sendBtn = document.getElementById("send-btn");
+if(sendBtn) sendBtn.onclick = send;
+const userInput = document.getElementById("user-input");
+if(userInput) userInput.onkeypress = (e) => { if(e.key === "Enter") send(); };
+</script>
+</body></html>
