@@ -1,31 +1,15 @@
 {
-  "firestore": {
-    "rules": "firestore.rules"
-  },
-  "hosting": {
-    "site": "af-ai-store-f0761e",
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      ".git/**",
-      ".github/**",
-      "node_modules/**",
-      "__pycache__/**",
-      "*.py",
-      "secrets.js",
-      "firebase-config.js"
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(js|css|html)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      }
-    ]
-  }
+    "hosting": {
+          "public": ".",
+          "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+          "rewrites": [
+                  {"source":"/dashboard","destination":"/dashboard.html"},
+                  {"source":"/upload","destination":"/upload.html"},
+                  {"source":"/results","destination":"/results.html"},
+                  {"source":"/chat","destination":"/chat.html"},
+                  {"source":"/login","destination":"/login.html"},
+                  {"source":"/profile","destination":"/profile.html"},
+                  {"source":"/learning","destination":"/learning.html"}
+          ]
+    }
 }
